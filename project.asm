@@ -38,6 +38,64 @@ AllRowsShifts:
     jnz AllRowsShifts
     ret
      endp
+
+mixColumns PROC 
+mov si,0
+    sloop:
+        ;fist eq
+        mov al,a[si]
+        call MulTwo
+        push ax
+        mov al,a[4+si]
+        call MulThree
+        pop bx
+        xor al,bh
+        xor al,a[8+si]
+        xor al,a[12+si]
+        mov b[si],al
+
+        ;2nd eq
+        mov al,a[si+4]
+        call MulTwo
+        push ax
+        mov al,a[8+si]
+        call MulThree
+        pop bx
+        xor al,bh
+        xor al,a[si]
+        xor al,a[12+si]
+        mov b[si+4],al
+
+
+        ;3rd eq
+        mov al,a[si+8]
+         call MulTwo
+        push ax
+        mov al,a[12+si]
+        call MulThree
+        pop bx
+        xor al,bh
+        xor al,a[si]
+        xor al,a[4+si]
+        mov b[si+8],al
+
+
+        ;4th eq
+        mov al,a[si+12]
+         call MulTwo
+        push ax
+        mov al,a[si]
+        call MulThree
+        pop bx
+        xor al,bh
+        xor al,a[4+si]
+        xor al,a[8+si]
+        mov b[si+12],al
+    inc si
+    cmp si,4
+    jnz sloop
+    ret
+    endp
 MulThree PROC ; input id in ax
     push ax
     call MulTwo
