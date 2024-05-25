@@ -36,4 +36,21 @@ AllRowsShifts:
     inc di 
     cmp di,4
     jnz AllRowsShifts
+    ret
      endp
+MulThree PROC ; input id in ax
+    push ax
+    call MulTwo
+    pop dx
+    xor ax,dx
+    ret
+    endp
+
+MulTwo PROC ; the input should be stored in ax
+    mov bx,2
+    mul bx  ; shift part is just *2 now if there is a carry it should be in ah 
+    cmp ah,1
+    jnz End1
+    xor al,1Bh ; if ah is 1 then we should xor the al with is number of some reason
+    ret 
+    End1:endp; out is in al
