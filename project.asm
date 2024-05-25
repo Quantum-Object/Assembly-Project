@@ -28,6 +28,12 @@ rows dw 0
 a db 1,2,3,4,100,2,3,4,1,2,3,4,1,2,3,4
 
 .code segment
+
+ subBytes macro
+        mov si, ax               ; Puts the position in the array in SI register to use it to address the array
+        mov al, sboxArray[si]    ; Retrieves the value from the "2d" array
+endm
+
 call ShiftRows 
 ret
 
@@ -133,8 +139,4 @@ MulTwo PROC ; the input should be stored in ax
     ret 
     End1:endp; out is in al
 
- subBytes proc        
-        mov si,ax ; puts the position in the array in si register to use it to address the array
-        mov al, sboxArray[si]    ; retrives the value from the "2d" array     
-        ret
-    subBytes endp
+
