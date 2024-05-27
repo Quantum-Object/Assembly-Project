@@ -10,6 +10,7 @@
  
     shifts dw 0
     rows dw 0
+    round dw 1
     a db 1,2,3,4,052h,2,3,4,1,2,3,4,1,2,3,4
                 ;   0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f
     sboxArray  db 063h, 07Ch, 077h, 07Bh, 0F2h, 06Bh, 06Fh, 0C5h, 030h, 001h, 067h, 02Bh, 0FEh, 0D7h, 0ABh, 076h  ;0
@@ -34,13 +35,15 @@
               db 07eh, 0aeh, 0f7h, 0cfh
               db 015h, 0d2h, 015h, 04fh
               db 016h, 0a6h, 088h, 03ch
+    n dw 0
               
     newKey db 16 dup(?)
     rcon db 01  
               
 
       
-.code segment       
+.code segment    
+
     
 start:
     ; Initialize the state pointer
@@ -49,51 +52,82 @@ start:
 
     mov si, offset state
     ;call ShiftRows
-    ;call mix_columns     
-    call keySchdule
+    ;call mix_columns
+CALL keySchdule 
     hlt
        
  
  keySchdule proc
                     
     mov al,cipherKey[3]
-    mov newKey[11], al 
+    mov newKey[12], al 
                 
     mov al,cipherKey[7]
     mov newKey[0], al 
     
     mov al,cipherKey[11]
-    mov newKey[3], al
+    mov newKey[4], al
     
     mov al,cipherKey[15]
-    mov newKey[7], al    
+    mov newKey[8], al    
     
-    mov al,newKey[3]
+    mov al,newKey[4]
     call subBytes  
-    mov newKey[3],al
+    mov newKey[4],al
     
-    mov al,newKey[7]
+    mov al,newKey[8]
     call subBytes  
-    mov newKey[7],al
+    mov newKey[8],al
     
-    mov al,newKey[11]
+    mov al,newKey[12]
     call subBytes  
-    mov newKey[11],al
+    mov newKey[12],al
     
     mov al,newKey[0]
     call subBytes  
     mov newKey[0],al
-    
+                          
+                          
+     XorFirstCol:
     mov si, 0
+    mov cx,4
+    ll: mov bl,cipherKey[si]
+        xor bl,newKey[si]
+        mov newKey[si],bl
+        add si,4
+    loop ll  
+    mov bl,newKey[0]
+    xor bl,rcon
+    mov newKey[0],bl
     
-    mov al,newKey[0]
-    mov bl, cipherKey[0]   
-    xor al, bl
     
-       
+    theOtherThree:   
+    mov n,1 
+    call XorWithPrevKey 
+     mov n,2 
+    call XorWithPrevKey  
+     mov n,3
+    call XorWithPrevKey 
     ret
- endp      
+
+ endp 
+    XorWithPrevKey PROC ;chiperkey is the previous key so we should update the key
+    mov di,n
+    mov si,n
+    dec si
+    MOV CX,4
+    someLL:
+        mov bl,cipherKey[di]
+        xor bl,newKey[si]  
+        MOV newKey[di],bl
+        add si,4
+        add di,4
+    loop someLL  
+    ret
+    endp
+
  
+
      subBytes proc ; after procedure call the value of the substituted byte will be in the al register       
         mov ah, 0       
         mov si,ax ; puts the position in the array in si register to use it to address the array
@@ -250,5 +284,4 @@ AllRowsShifts:
             jnz theloop  
     
     ENDM
-
 
