@@ -1,11 +1,15 @@
 .model small
 .stack 100h
 .data segment
-        num db 05h
-    state db 0d4h, 0e0h, 0b8h, 01eh
-          db 0bfh, 0b4h, 041h, 027h
-          db 05dh, 052h, 011h, 098h
-          db 030h, 0aeh, 0f1h, 0e5h
+        state db 32h, 88h, 31h, 0E0h
+              db 43h, 5Ah, 31h, 037h
+              db 0F6h,30h, 98h,  07h
+              db 0A8h,8Dh, 0A2h,034h
+
+;    state db 0d4h, 0e0h, 0b8h, 01eh
+ ;         db 0bfh, 0b4h, 041h, 027h
+  ;        db 05dh, 052h, 011h, 098h
+   ;       db 030h, 0aeh, 0f1h, 0e5h
     tmp db 16 dup(?)
  
     shifts dw 0
@@ -38,10 +42,10 @@
     n dw 0
               
     newKey db 16 dup(?)
-    rcon db 01  
-              
+    rcon db 01h,02h,04h,08h,10h,20h,40h,80h,1bh,36h
+             
 
-      
+                                                                    
 .code segment    
 
     
@@ -49,11 +53,29 @@ start:
     ; Initialize the state pointer
     mov ax, @data
     mov ds, ax
-
-    mov si, offset state
-    ;call ShiftRows
-    ;call mix_columns
-CALL keySchdule 
+    mov dl,rcon[4]
+    mov dl, rcon 
+    call AddRoundKey    ; added round key before the main loop 
+                
+    mov bp,0  
+     
+    mainLoop:
+    
+    call subBytesBlock
+    call ShiftRows
+    call mix_columns
+        call keySchdule
+    call AddRoundKey   
+    inc bp     
+    cmp bp,9
+    jnz mainLoop  
+    
+    call subBytesBlock
+    call ShiftRows
+         call keySchdule
+    call AddRoundKey
+    
+    
     hlt
        
  
@@ -96,8 +118,13 @@ CALL keySchdule
         mov newKey[si],bl
         add si,4
     loop ll  
-    mov bl,newKey[0]
-    xor bl,rcon
+    mov bl,newKey[0] 
+    
+    push si
+    mov si,bp
+    mov dl,rcon[si] 
+    xor bl,rcon[si]
+    pop si
     mov newKey[0],bl
     
     
@@ -108,6 +135,16 @@ CALL keySchdule
     call XorWithPrevKey  
      mov n,3
     call XorWithPrevKey 
+    
+     
+    
+    mov cx,16
+    mov si, 0
+    changeCipherKey:  
+        mov bl,newKey[si]
+        mov  cipherKey[si], bl
+        inc si
+    loop changeCipherKey
     ret
 
  endp 
@@ -126,7 +163,19 @@ CALL keySchdule
     ret
     endp
 
- 
+     subBytesBlock proc
+         mov cx, 16      
+         mov di,0
+         change: 
+         
+            mov al,state[di]
+            call subBytes  
+            mov state[di],al
+            
+            inc di                      
+         loop change
+         ret
+     endp
 
      subBytes proc ; after procedure call the value of the substituted byte will be in the al register       
         mov ah, 0       
@@ -140,7 +189,7 @@ mix_columns proc
     ; Process each column
     mov cx, 4      ; Process 4 columns
     mov di, offset tmp    ; Temporary storage pointer
-    
+    mov si , offset state
 process_column:   ; Load one column into registers                                                                                                           
     ; Perform the Mix Columns transformation for the first byte
     ; tmp0 = 2 * a0 + 3 * a1 + 1 * a2 + 1 * a3
@@ -255,14 +304,14 @@ AllRowsShifts:
     RowShifts:
         OneShift:
             mov si,ax
-            mov bl,a[si-1]
+            mov bl,state[si-1]
             mov cx,3
             l:                  
-            mov bh,a[si]
-            mov a[si-1],bh
+            mov bh,state[si]
+            mov state[si-1],bh
             inc si
             loop l
-            mov a[si-1],bl
+            mov state[si-1],bl
         inc shifts
         cmp shifts,di
         jnz RowShifts
@@ -272,16 +321,16 @@ AllRowsShifts:
     ret
     endp
     
-   AddRoundKey    MACRO  a1,a2  
+   AddRoundKey proc
     
+  
     mov si,0
+    mov cx,16
     theloop:  
-            mov bl,[a1+si]
-            xor bl ,[a2+si]
-            mov [a1+si],bl
+            mov bl,state[si]
+            xor bl ,cipherKey[si]
+            mov state[si],bl
             inc si
-            cmp si,16
-            jnz theloop  
-    
-    ENDM
-
+            loop theloop
+            ret  
+    endp
