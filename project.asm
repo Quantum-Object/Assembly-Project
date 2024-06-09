@@ -1,15 +1,13 @@
 .model small
 .stack 100h
 .data segment
-        state db 32h, 88h, 31h, 0E0h
-              db 43h, 5Ah, 31h, 037h
-              db 0F6h,30h, 98h,  07h
-              db 0A8h,8Dh, 0A2h,034h
+;        state db 32h, 88h, 31h, 0E0h
+ ;             db 43h, 5Ah, 31h, 037h
+  ;            db 0F6h,30h, 98h,  07h
+  ;            db 0A8h,8Dh, 0A2h,034h
 
-;    state db 0d4h, 0e0h, 0b8h, 01eh
- ;         db 0bfh, 0b4h, 041h, 027h
-  ;        db 05dh, 052h, 011h, 098h
-   ;       db 030h, 0aeh, 0f1h, 0e5h
+;this is the cipherKey, which should be taken as input at the start of the code    
+;state DB 068h, 065h, 06Ch, 06Ch, 06Fh, 000h, 000h, 000h, 000h, 000h, 000h, 000h, 000h, 000h, 000h, 000h
     tmp db 16 dup(?)
  
     shifts dw 0
@@ -35,24 +33,77 @@
                db 08Ch, 0A1h, 089h, 00Dh, 0BFh, 0E6h, 042h, 068h, 041h, 099h, 02Dh, 00Fh, 0B0h, 054h, 0BBh, 016h  ;f  
 
 
-    cipherKey db 02bh, 028h, 0abh, 009h
-              db 07eh, 0aeh, 0f7h, 0cfh
-              db 015h, 0d2h, 015h, 04fh
-              db 016h, 0a6h, 088h, 03ch
-    n dw 0
+;cipherKey DB 069h, 020h, 064h, 06Fh, 06Eh, 074h, 020h, 065h, 076h, 065h, 06Eh, 020h, 06Bh, 06Eh, 06Fh, 077h    
+n dw 0
               
     newKey db 16 dup(?)
-    rcon db 01h,02h,04h,08h,10h,20h,40h,80h,1bh,36h
+    rcon db 01h,02h,04h,08h,10h,20h,40h,80h,1bh,36h  
+    idk db 'Enter a key: $'
              
+                              
+    prompt db 'Enter a 128-bit string (16 characters): $'   
+    
 
-                                                                    
+    state db 16 dup(0)  ; 16-byte array initialized to zero
+    inputBuffer db 17 dup(0)  ; buffer to store user input (16 chars + 1 for null terminator)
+    inputLen db 0  ; to store the length of the input     
+    buff db 2 dup(0)                     
+    cipherKey db 16 dup(0)                                                                
 .code segment    
 
     
-start:
-    ; Initialize the state pointer
+start: 
+
+       ; Initialize the state pointer
     mov ax, @data
     mov ds, ax
+    
+    ; Display the prompt
+    lea dx, prompt
+    mov ah, 09h
+    int 21h
+
+    ; Read the input
+    lea dx, inputBuffer
+    mov ah, 0Ah
+    lea dx ,state-2
+    mov state, 17
+    int 21h
+
+    nop
+    mov al,0
+
+    ; Display the prompt for key
+    lea dx, idk
+    mov ah, 09h
+    int 21h
+
+
+
+    mov al,0
+    nop
+
+    ; Read the input
+    lea dx, inputBuffer
+    mov ah, 0Ah
+    lea dx ,buff
+    mov buff, 17
+    int 21h
+
+
+    mov cx,16
+    mov si,-1
+    removed: 
+    inc si
+    cmp state[si],0dh
+
+    jnz removed
+    mov state[si], 0
+    Done:
+      
+    
+
+    
     mov dl,rcon[4]
     mov dl, rcon 
     call AddRoundKey    ; added round key before the main loop 
