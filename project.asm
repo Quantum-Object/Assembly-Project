@@ -42,19 +42,37 @@ n dw 0
              
                               
     prompt db 'Enter a 128-bit string (16 characters): $'   
-    
-
-    state db 16 dup(0)  ; 16-byte array initialized to zero
+    msg dw 'Here is the Encrypted Output: $'
+    state db 16 dup(0),'$'  ; 16-byte array initialized to zero
     inputBuffer db 17 dup(0)  ; buffer to store user input (16 chars + 1 for null terminator)
     inputLen db 0  ; to store the length of the input     
     buff db 2 dup(0)                     
     cipherKey db 16 dup(0)                                                                
-.code segment    
+.code segment  
+
+    newLine MACRO
+    mov ah,02
+    mov dl,10
+    int 21h
+    mov ah,02
+    mov dl,13
+    int 21h
+endm
+
+printString MACRO msg
+    lea dx,msg
+    mov ah,09h
+    int 21h
+endm
+
+
+
+
 
     
 start: 
 
-       ; Initialize the state pointer
+    ; Initialize the state pointer
     mov ax, @data
     mov ds, ax
     
@@ -62,6 +80,8 @@ start:
     lea dx, prompt
     mov ah, 09h
     int 21h
+
+    newLine
 
     ; Read the input
     lea dx, inputBuffer
@@ -72,12 +92,14 @@ start:
 
     nop
     mov al,0
+    newLine
+
 
     ; Display the prompt for key
     lea dx, idk
     mov ah, 09h
     int 21h
-
+    newLine
 
 
     mov al,0
@@ -89,7 +111,7 @@ start:
     lea dx ,buff
     mov buff, 17
     int 21h
-
+    newLine
 
     mov cx,16
     mov si,-1
@@ -125,7 +147,12 @@ start:
     call ShiftRows
          call keySchdule
     call AddRoundKey
-    
+   
+  
+    ;print output
+    newLine
+    printString msg
+    newLine
     
     hlt
        
